@@ -11,12 +11,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Initialize Amadeus client
-const amadeus = new Amadeus({
-  clientId: process.env.AMADEUS_CLIENT_ID,
-  clientSecret: process.env.AMADEUS_CLIENT_SECRET,
-  hostname: process.env.AMADEUS_HOSTNAME || 'test',
-});
+// Check for required environment variables
+const clientId = process.env.AMADEUS_CLIENT_ID;
+const clientSecret = process.env.AMADEUS_CLIENT_SECRET;
+
+let amadeus = null;
+
+if (clientId && clientSecret) {
+  // Initialize Amadeus client
+  amadeus = new Amadeus({
+    clientId,
+    clientSecret,
+    hostname: process.env.AMADEUS_HOSTNAME || 'test',
+  });
+} else {
+  console.error('Warning: Amadeus credentials not configured. Set AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET environment variables.');
+}
 
 // Create server instance
 const server = new Server(
@@ -129,6 +139,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Handle tool execution
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
+
+  // Check if Amadeus is configured
+  if (!amadeus) {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: 'Error: Amadeus API is not configured. Please set AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET environment variables.',
+        },
+      ],
+      isError: true,
+    };
+  }
 
   try {
     if (name === 'search_flights') {

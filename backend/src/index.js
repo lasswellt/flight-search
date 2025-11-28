@@ -8,23 +8,47 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Initialize Amadeus client
-const amadeus = new Amadeus({
-  clientId: process.env.AMADEUS_CLIENT_ID,
-  clientSecret: process.env.AMADEUS_CLIENT_SECRET,
-  hostname: process.env.AMADEUS_HOSTNAME || 'test', // 'test' for test environment, 'production' for production
-});
+// Check for required environment variables
+const clientId = process.env.AMADEUS_CLIENT_ID;
+const clientSecret = process.env.AMADEUS_CLIENT_SECRET;
+
+let amadeus = null;
+
+if (clientId && clientSecret) {
+  // Initialize Amadeus client
+  amadeus = new Amadeus({
+    clientId,
+    clientSecret,
+    hostname: process.env.AMADEUS_HOSTNAME || 'test', // 'test' for test environment, 'production' for production
+  });
+} else {
+  console.warn('Warning: Amadeus credentials not configured. Set AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET environment variables.');
+}
+
+// Middleware to check if Amadeus is configured
+const requireAmadeus = (req, res, next) => {
+  if (!amadeus) {
+    return res.status(503).json({
+      error: 'Amadeus API is not configured. Please set AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET environment variables.',
+    });
+  }
+  next();
+};
 
 app.use(cors());
 app.use(express.json());
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    amadeusConfigured: !!amadeus,
+  });
 });
 
 // Search for flight offers
-app.get('/api/flights/search', async (req, res) => {
+app.get('/api/flights/search', requireAmadeus, async (req, res) => {
   try {
     const {
       originLocationCode,
@@ -82,7 +106,7 @@ app.get('/api/flights/search', async (req, res) => {
 });
 
 // Get airport/city suggestions for autocomplete
-app.get('/api/locations', async (req, res) => {
+app.get('/api/locations', requireAmadeus, async (req, res) => {
   try {
     const { keyword, subType = 'CITY,AIRPORT' } = req.query;
 
@@ -109,7 +133,7 @@ app.get('/api/locations', async (req, res) => {
 });
 
 // Get flight price confirmation
-app.post('/api/flights/price', async (req, res) => {
+app.post('/api/flights/price', requireAmadeus, async (req, res) => {
   try {
     const { flightOffer } = req.body;
 
@@ -140,7 +164,7 @@ app.post('/api/flights/price', async (req, res) => {
 });
 
 // Get flight schedules (future schedule availability)
-app.get('/api/flights/schedules', async (req, res) => {
+app.get('/api/flights/schedules', requireAmadeus, async (req, res) => {
   try {
     const { carrierCode, flightNumber, scheduledDepartureDate } = req.query;
 
