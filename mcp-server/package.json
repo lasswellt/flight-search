@@ -1,0 +1,18 @@
+{
+  "name": "flight-search-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for flight search using Amadeus API",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "flight-search-mcp": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "amadeus": "^11.0.0",
+    "dotenv": "^16.4.5"
+  }
+}
