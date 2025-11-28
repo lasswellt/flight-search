@@ -25,7 +25,7 @@ if (clientId && clientSecret) {
     hostname: process.env.AMADEUS_HOSTNAME || 'test',
   });
 } else {
-  console.error('Warning: Amadeus credentials not configured. Set AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET environment variables.');
+  console.warn('Warning: Amadeus credentials not configured. Set AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET environment variables.');
 }
 
 // Create server instance
